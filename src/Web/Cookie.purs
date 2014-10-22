@@ -79,23 +79,19 @@ setCookieString = setCookieImpl
 setCookie :: forall eff. SetCookie -> Eff (cookie :: Cookie | eff) Unit
 setCookie sc = setCookieString (renderSetCookie sc)
 
-foreign import sanitizeCookieValueImpl "\
-    \function sanitizeCookieValueImpl(conf, s) {\
-    \   if (s.indexOf('\"') === 0) {\
-    \       s = s.slice(1, -1).replace(/\\\\\"/g, '\"').replace(/\\\\\\\\/g, '\\\\');\
-    \   }\
-    \\
-    \   try {\
-    \       s = decodeURIComponent(s.replace(/\\+/g, ' '));\
-    \       return conf.just(s);\
-    \   } catch (e) {return conf.nothing}\
-    \}" :: Fn2 {nothing :: Maybe String, just :: String -> Maybe String} String (Maybe String)
-
-sanitizeCookieValue :: String -> Maybe String
-sanitizeCookieValue = runFn2 sanitizeCookieValueImpl {nothing: Nothing, just: Just}
-
 foreign import getCookieImpl "\
     \function getCookieImpl(conf) {\
+    \   function sanitizeCookieValueImpl(conf, s) {\
+    \       if (s.indexOf('\"') === 0) {\
+    \           s = s.slice(1, -1).replace(/\\\\\"/g, '\"').replace(/\\\\\\\\/g, '\\\\');\
+    \       }\
+    \\
+    \       try {\
+    \           s = decodeURIComponent(s.replace(/\\+/g, ' '));\
+    \           return conf.just(s);\
+    \       } catch (e) {return conf.nothing}\
+    \   }\
+    \\
     \   return function () {\
     \       var result = conf.nothing;\
     \       var cookies = document.cookie ? document.cookie.split('; ') : [];\
